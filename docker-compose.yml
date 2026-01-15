@@ -1,0 +1,71 @@
+services:
+  order-service:
+    build:
+      context: ./order-service
+    container_name: order-service
+    environment:
+      DB_HOST: postgres-order
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: order_db
+    depends_on:
+      - postgres-order
+    ports:
+      - "8080:3000"
+    restart: always
+    networks:
+      - app-network
+
+  payment-service:
+    build:
+      context: ./payment-service
+    container_name: payment-service
+    environment:
+      DB_HOST: postgres-payment
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: postgres
+      DB_NAME: payment_db
+      ORDER_SERVICE_URL: http://order-service:3000
+      ORDER_CALLBACK_URL: http://order-service:3000/internal/payment-callback
+    depends_on:
+      - postgres-payment
+    ports:
+      - "8081:3000"
+    restart: always
+    networks:
+      - app-network
+
+  postgres-order:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: order_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5433:5432"
+    networks:
+      - app-network
+    volumes:
+      - order_data:/var/lib/postgresql/data
+
+  postgres-payment:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_DB: payment_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    networks:
+      - app-network
+    volumes:
+      - payment_data:/var/lib/postgresql/data
+
+networks:
+  app-network:
+
+volumes:
+  order_data:
+  payment_data:

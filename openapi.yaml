@@ -1,0 +1,333 @@
+openapi: 3.0.3
+info:
+  title: Order & Payment Microservice API
+  description: >
+    Dokumentasi API terpadu untuk Order Service dan Payment Service.
+    Spesifikasi ini merepresentasikan kontrak aktual antar service,
+    termasuk endpoint publik dan internal callback pembayaran.
+  version: 1.0.0
+
+servers:
+  - url: http://localhost:8080
+    description: Local development (Order Service)
+  - url: http://localhost:8081
+    description: Local development (Payment Service)
+
+tags:
+  - name: Orders
+    description: Manajemen order
+  - name: Payments
+    description: Manajemen pembayaran
+  - name: Internal
+    description: Endpoint internal antar service
+
+paths:
+  /orders:
+    get:
+      tags: [Orders]
+      summary: Ambil seluruh order
+      responses:
+        '200':
+          description: Daftar order
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/OrderResponse'
+
+    post:
+      tags: [Orders]
+      summary: Membuat order baru
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderCreateRequest'
+      responses:
+        '200':
+          description: Order berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponseOrder'
+
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      tags: [Orders]
+      summary: Ambil order berdasarkan ID
+      responses:
+        '200':
+          description: Order ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponseOrder'
+
+    put:
+      tags: [Orders]
+      summary: Update order
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OrderUpdateRequest'
+      responses:
+        '200':
+          description: Order berhasil diperbarui
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponseOrder'
+
+    delete:
+      tags: [Orders]
+      summary: Hapus order
+      responses:
+        '200':
+          description: Order berhasil dihapus
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  message:
+                    type: string
+                    example: order deleted
+                  id:
+                    type: string
+                    format: uuid
+
+  /payments:
+    post:
+      tags: [Payments]
+      summary: Membuat payment dan langsung menandai sebagai success
+      description: >
+        Endpoint ini akan membuat payment lalu langsung memanggil
+        proses mark as success.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCreateRequest'
+      responses:
+        '200':
+          description: Payment berhasil dibuat
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponsePayment'
+
+  /payments/{paymentId}:
+    parameters:
+      - $ref: '#/components/parameters/PaymentId'
+    get:
+      tags: [Payments]
+      summary: Ambil payment berdasarkan ID
+      responses:
+        '200':
+          description: Payment ditemukan
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponsePayment'
+
+  /payments/success/{paymentId}:
+    parameters:
+      - $ref: '#/components/parameters/PaymentId'
+    put:
+      tags: [Payments]
+      summary: Tandai payment sebagai success
+      responses:
+        '200':
+          description: Payment berhasil ditandai success
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponsePayment'
+
+  /payments/failed/{paymentId}:
+    parameters:
+      - $ref: '#/components/parameters/PaymentId'
+    put:
+      tags: [Payments]
+      summary: Tandai payment sebagai failed
+      responses:
+        '200':
+          description: Payment berhasil ditandai failed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/WebResponsePayment'
+
+  /internal/payment-callback:
+    post:
+      tags: [Internal]
+      summary: Callback pembayaran dari payment-service ke order-service
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PaymentCallbackRequest'
+      responses:
+        '200':
+          description: Callback berhasil diproses
+          content:
+            application/json:
+              schema:
+                type: object
+
+components:
+  parameters:
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+    PaymentId:
+      name: paymentId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+
+  schemas:
+    WebResponseOrder:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        status:
+          type: string
+          example: OK
+        data:
+          $ref: '#/components/schemas/OrderResponse'
+
+    WebResponsePayment:
+      type: object
+      properties:
+        code:
+          type: integer
+          example: 200
+        status:
+          type: string
+          example: OK
+        data:
+          $ref: '#/components/schemas/PaymentResponse'
+
+    OrderCreateRequest:
+      type: object
+      required: [item_name, quantity, price]
+      properties:
+        item_name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          type: integer
+          minimum: 1
+
+    OrderUpdateRequest:
+      type: object
+      required: [item_name, quantity, price]
+      properties:
+        item_name:
+          type: string
+        quantity:
+          type: integer
+          minimum: 1
+        price:
+          type: integer
+          minimum: 1
+
+    OrderResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        item_name:
+          type: string
+        quantity:
+          type: integer
+        price:
+          type: integer
+        total_amount:
+          type: integer
+        status:
+          type: string
+          enum: [pending, paid, failed]
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaymentCreateRequest:
+      type: object
+      required: [order_id, amount, provider]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        provider:
+          type: string
+
+    PaymentResponse:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        order_id:
+          type: string
+          format: uuid
+        amount:
+          type: integer
+        status:
+          type: string
+          enum: [pending, success, failed]
+        provider:
+          type: string
+        paid_at:
+          type: string
+          format: date-time
+          nullable: true
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+
+    PaymentCallbackRequest:
+      type: object
+      required: [order_id, payment_id, payment_status]
+      properties:
+        order_id:
+          type: string
+          format: uuid
+        payment_id:
+          type: string
+          format: uuid
+        payment_status:
+          type: string
+          enum: [success, failed]
