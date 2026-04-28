@@ -81,7 +81,7 @@ func (controller *OrderControllerImpl) Delete(c *fiber.Ctx) error {
 		return helper.BadRequest(c, "invalid order id")
 	}
 
-	return c.JSON(fiber.Map{
+	return helper.ResponseSuccess(c, fiber.Map{
 		"message": "order deleted",
 		"id":      orderId,
 	})
@@ -111,5 +111,5 @@ func (controller *OrderControllerImpl) FindAll(c *fiber.Ctx) error {
 
 	response := helper.ToOrderResponses(orders)
 
-	return c.JSON(fiber.Map{"data": response})
+	return helper.ResponseSuccess(c, response)
 }
