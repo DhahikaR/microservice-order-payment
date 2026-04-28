@@ -30,6 +30,8 @@ func (controller *PaymentControllerImpl) Create(c *fiber.Ctx) error {
 		return helper.BadRequest(c, err.Error())
 	}
 
+	// Mock: payment langsung di-mark success untuk simulasi payment gateway.
+	// Di production, ini diganti dengan webhook dari provider (Midtrans, dll.)
 	updated, err := controller.paymentService.MarkAsSuccess(c.Context(), payment.ID.String())
 	if err != nil {
 		return helper.InternalServerError(c, err.Error())
