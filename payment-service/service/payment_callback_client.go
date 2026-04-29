@@ -51,6 +51,9 @@ func SendPaymentCallback(ctx context.Context, callbackURL string, payload web.Pa
 
 	request.Header.Set("Content-Type", "application/json")
 
+	internalSecret := os.Getenv("INTERNAL_SECRET")
+	request.Header.Set("X-Internal-Secret", internalSecret)
+
 	client := httpClient
 	response, err := client.Do(request)
 	if err != nil {
