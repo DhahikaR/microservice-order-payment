@@ -2,6 +2,7 @@ package routes
 
 import (
 	"order-service/controller"
+	"order-service/middleware"
 
 	"github.com/gofiber/fiber/v2"
 )
@@ -17,5 +18,5 @@ func OrderRoutes(app *fiber.App, orderController controller.OrderController) {
 }
 
 func PaymentCallbackRoutes(app *fiber.App, callbackController controller.PaymentCallbackController) {
-	app.Post("/internal/payment-callback", callbackController.Handle)
+	app.Post("/internal/payment-callback", middleware.InternalAuthMiddleware, callbackController.Handle)
 }
